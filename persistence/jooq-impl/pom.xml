@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2023. Bear Giles <bgiles@coyotesong.com>.
+  ~ All Rights Reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.coyotesong.microservice.rss.persistence</groupId>
+        <artifactId>parent</artifactId>
+        <version>0.4-SNAPSHOT</version>
+    </parent>
+    <artifactId>jooq-impl</artifactId>
+
+    <name>RSS persistence | implementation using jOOQ</name>
+
+    <properties>
+        <testcontainers-jooq-codegen-maven-plugin.version>0.0.3</testcontainers-jooq-codegen-maven-plugin.version>
+        <jooq.version>3.18.3</jooq.version>  <!-- 3.18.7 -->
+
+        <spring-boot-test.version>2.7.5</spring-boot-test.version>
+
+        <!-- for auto-generation -->
+        <!-- <jooq.target.directory>src/main/java.jooq</jooq.target.directory> -->
+        <jooq.target.directory>src/main/java</jooq.target.directory>
+        <jooq.target.packageName>com.coyotesong.microservice.rss.repo.jooq.generated</jooq.target.packageName>
+        <testcontainers.version>1.19.1</testcontainers.version>
+        <postgresql-jdbc.version>42.6.0</postgresql-jdbc.version>
+        <postgresql-docker.version>15-alpine</postgresql-docker.version>
+    </properties>
+
+    <!-- Note: using testcontainers-jooq-codegen-maven-plugin requires java 17 (I think) -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- BOMs -->
+            <dependency>
+                <groupId>com.coyotesong.microservice.rss.persistence</groupId>
+                <artifactId>bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- RUNTIME DEPENDENCIES -->
+            <dependency>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq</artifactId>
+                <version>${jooq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq-meta</artifactId>
+                <version>${jooq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq-codegen</artifactId>
+                <version>${jooq.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.coyotesong.microservice.rss</groupId>
+            <artifactId>core</artifactId>
+        </dependency>
+
+        <!-- database -->
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq-meta</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+        </dependency>
+
+        <!-- TEST DEPENDENCIES -->
+        <dependency>
+            <groupId>com.coyotesong.microservice.rss</groupId>
+            <artifactId>core</artifactId>
+            <classifier>tests</classifier>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test-autoconfigure</artifactId>
+            <version>${spring-boot-test.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.4.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!-- we don't need features beyond 11 (java.net.http) and this gives us more flexibility -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+
+            <!--
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${jooq.src.directory}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            -->
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>codegen</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- see https://testcontainers.com/guides/working-with-jooq-flyway-using-testcontainers/ -->
+                    <plugin>
+                        <groupId>org.testcontainers</groupId>
+                        <artifactId>testcontainers-jooq-codegen-maven-plugin</artifactId>
+                        <version>${testcontainers-jooq-codegen-maven-plugin.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.jooq</groupId>
+                                <artifactId>jooq-codegen</artifactId>
+                                <version>${jooq.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.testcontainers</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>${testcontainers.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>${postgresql-jdbc.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>com.coyotesong.microservice.rss</groupId>
+                                <artifactId>core</artifactId>
+                                <version>${project.version}</version>
+                                <classifier>tests</classifier>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>generate-jooq-sources-for-rss</id>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                                <phase>generate-sources</phase>
+                                <configuration>
+                                    <database>
+                                        <type>POSTGRES</type>
+                                        <containerImage>postgres:${postgresql-docker.version}</containerImage>
+                                    </database>
+                                    <flyway>
+                                        <defaultSchema>rss</defaultSchema>
+                                        <locations>
+                                            filesystem:src/main/resources/db/migration
+                                        </locations>
+                                    </flyway>
+                                    <jooq>
+                                        <generator>
+                                            <name>org.jooq.codegen.JavaGenerator</name>
+                                            <generate>
+                                                <javaTimeTypes>true</javaTimeTypes>
+                                                <generatedSerialVersionUID>CONSTANT</generatedSerialVersionUID>
+                                                <!-- <pojos>false</pojos> -->
+                                                <!-- <daos>false</daos> -->
+                                                <springAnnotations>true</springAnnotations>
+                                                <!-- <interfaces>true</interfaces> -->
+                                                <!-- <immutableInterfaces>true</immutableInterfaces> -->
+                                            </generate>
+                                            <database>
+                                                <!-- The database type. The format here is:
+                                                     org.jooq.meta.[database].[database]Database -->
+                                                <name>org.jooq.meta.postgres.PostgresDatabase</name>
+
+                                                <!-- The database schema (or in the absence of schema support, in your RDBMS this
+                                                     can be the owner, user, database name) to be generated -->
+                                                <!--
+                                                <inputSchema>rss</inputSchema>
+                                                -->
+                                                <schemata>
+                                                    <schema>
+                                                        <inputSchema>rss</inputSchema>
+                                                    </schema>
+                                                    <schema>
+                                                        <inputSchema>rome</inputSchema>
+                                                    </schema>
+                                                </schemata>
+
+                                                <!-- All elements that are generated from your schema
+                                                     (A Java regular expression. Use the pipe to separate several expressions)
+                                                     Watch out for case-sensitivity. Depending on your database, this might be important! -->
+                                                <includes>.*</includes>
+
+                                                <!-- All elements that are excluded from your schema
+                                                     (A Java regular expression. Use the pipe to separate several expressions).
+                                                     Excludes match before includes, i.e. excludes have a higher priority -->
+                                                <excludes>(?i:.*flyway.*|config_overridden_history_table)</excludes>
+
+                                                <embeddablePrimaryKeys>(?i:KEY)</embeddablePrimaryKeys>
+
+                                                <!--<syntheticPrimaryKeys>rss\.links\.Column(1|2|3)</syntheticPrimaryKeys>-->
+
+                                                <!-- this is not required by all databases -->
+                                                <!--
+                                                <syntheticObjects>
+                                                    <identities>
+                                                        <identity>
+                                                            <tables>rome.*</tables>
+                                                            <fields>(?i:.ID)</fields>
+                                                        </identity>
+                                                        <identity>
+                                                            <tables>rss.*</tables>
+                                                            <fields>(?i:.ID)</fields>
+                                                        </identity>
+                                                    </identities>
+                                                    -
+                                                    <foreignKeys>
+                                                        <foreignKey>
+                                                           ...
+                                                        </foreignKey>
+                                                    </foreignKeys>
+                                                    -
+                                                </syntheticObjects>
+                                                -->
+
+
+                                                <!--
+                                                <includePrimaryKeys>true</includePrimaryKeys>
+                                                <includeUniqueKeys>true</includeUniqueKeys>
+                                                <includeForeignKeys>true</includeForeignKeys>
+                                                -->
+                                                <!-- <includeCheckConstraints>true</includeCheckConstraints> -->
+                                                <!-- <includeIndexes>true</includeIndexes> -->
+
+                                                <!-- <recordVersionFields>REC_VERSION</recordVersionFields> -->
+                                                <!-- <recordTimestampFields>REC_TIMESTAMP</recordTimestampFields> -->
+
+                                                <forcedTypes>
+                                                    <forcedType>
+                                                        <userType>java.time.Instant</userType>
+                                                        <binding>
+                                                            com.coyotesong.microservice.rss.repo.jooq.bindings.LocalDateTimeToInstantBinding
+                                                        </binding>
+                                                        <!-- <includeExpression>(?i:EXPIRES|LAST_MODIFIED|.*_DATE)</includeExpression> -->
+                                                        <includeTypes>(?i:TIMESTAMP)</includeTypes>
+                                                    </forcedType>
+                                                    <forcedType>
+                                                        <userType>java.net.URL</userType>
+                                                        <binding>
+                                                            com.coyotesong.microservice.rss.repo.jooq.bindings.VarcharToUrlBinding
+                                                        </binding>
+                                                        <includeExpression>(?i:.*URL|HREF)</includeExpression>
+                                                    </forcedType>
+
+                                                    <!-- enum columns: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-forced-types/codegen-database-forced-types-enum-converter/ -->
+                                                    <!--
+                                                    <forcedType>
+                                                        <userType>com.example.MyEnum</userType>
+                                                        <enumConverter>true</enumConverter>
+                                                        <includeExpression>.*\MY_STATUS</includeExpression>
+                                                    </forcedType>
+                                                    -->
+                                                </forcedTypes>
+
+                                                <!-- readonly columns: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-readonly-columns/ -->
+                                                <!-- audit columns: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-forced-types/codegen-database-forced-types-audit/ -->
+                                            </database>
+                                            <target>
+                                                <packageName>${jooq.target.packageName}</packageName>
+                                                <directory>${jooq.target.directory}</directory>
+                                            </target>
+                                        </generator>
+                                    </jooq>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

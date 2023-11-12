@@ -1,0 +1,283 @@
+--
+-- Implementation notes:
+--
+--  - postgresql should be able to use column constraint 'generated as identity'...
+--
+
+SET search_path = rss, pg_catalog;
+
+--
+-- Information about each RSS entry
+--
+-- 'URL' is maintained in 'links' table?
+--
+create table rss.entries (
+  timestamp       timestamp(6) without time zone not null default now()::timestamp(6),
+  entry_id        serial not null,
+  title           text not null,
+  author          text,
+  url             text not null,
+  uri             text not null,
+  published_date  timestamp(0) without time zone not null,
+  updated_date    timestamp(0) without time zone,
+
+  author_count    int4 not null,
+  link_count      int4 not null,
+
+  constraint entries_pkey primary key(entry_id)
+);
+
+COMMENT ON TABLE rss.entries IS 'RSS article descriptions';
+
+--
+-- RSS article description: 1-to-1 relationship with entries.
+--
+create table rss.descriptions (
+  entry_id        int4 not null,
+  mode            text,
+  type            text,
+  value           text,
+
+  constraint descriptions_pkey primary key (entry_id)
+  -- constraint description_unique_key unique key (entry_id)
+  -- constraint description_entry_id_fkey foreign key (entry_id) references rss.entries(entry_id)
+);
+
+--
+-- RSS article contents: many-to-1 relationship with entries.
+--
+create table rss.contents (
+  content_id      serial not null,
+  position        int4 not null,
+
+  constraint contents_pkey primary key (content_id)
+  -- constraint contents_entry_id_fkey foreign key (entry_id) references rss.entries(entry_id)
+) inherits (rss.descriptions);
+
+-- alter table rss.description add constraint description_unique_key unique key(entry_id);
+
+--
+-- Authors and collaborators: many-to-many relationship with entries.
+--
+create table rss.persons (
+  person_id       serial not null,
+  name            text not null,
+  email           text not null,
+  url             text,
+
+  constraint persons_pkey primary key (person_id)
+  -- constraint persons_pkey primary key (email)
+);
+
+--
+-- Categories: many-to-many relationships with entries.
+--
+create table rss.categories (
+  category_id     serial not null,
+  name            text not null,
+  label           text,
+  taxonomy_uri    text,
+
+  constraint categories_pkey primary key (category_id)
+  -- constraint categories_pkey primary key(name)
+);
+
+--
+--
+--
+create table rss.enclosures (
+  enclosure_id    serial not null,
+  type            text,
+  url             text,
+  length          int8,
+
+  constraint enclosures_pkey primary key(enclosure_id)
+);
+
+--
+--
+--
+create table rss.images (
+  image_id        serial not null,
+  title           text,
+  url             text,
+  description     text,
+  height          int4,
+  width           int4,
+  link            text,
+  content         bytea,
+
+  constraint images_pkey primary key(image_id)
+);
+
+-- ------------------------------------------------------------
+
+--
+-- could these tables be combined with an author/collaborator flag?
+--
+
+--
+-- Many-to-many relationship between articles (RSS entries) and authors
+--
+create table rss.entry_authors (
+  person_id        int4 not null,
+  entry_id         int4 not null,
+
+  constraint entry_authors_pkey primary key(person_id, entry_id)
+  -- constraint entry_authors_person_fkey foreign key (person_id) references rss.persons(person_id),
+  -- constraint entry_authors_entry_fkey foreign key (entry_id) references rss.entries(entry_id)
+);
+
+--
+-- Many-to-many relationship between articles (RSS entries) and collaborators
+--
+create table rss.entry_collaborators (
+  person_id        int4 not null,
+  entry_id         int4 not null,
+
+  constraint entry_collaborators_pkey primary key(person_id, entry_id)
+  -- constraint entry_collaborators_person_fkey foreign key (person_id) references rss.persons(person_id),
+  -- constraint entry_collaborators_entry_fkey foreign key (entry_id) references rss.entries(entry_id)
+);
+
+-- ------------------------------------------------------------
+
+--
+-- Information about each feed
+--
+create table rss.feeds (
+  feed_id         serial not null,
+  timestamp       timestamp(6) without time zone not null default now()::timestamp(6),
+  url             text not null,
+  is_live         boolean not null default false,
+  is_valid        boolean not null default false,
+  feed_type       text,
+  title           text not null,
+  description     text,
+  author          text,
+  copyright       text,
+  encoding        text,
+  language        text,
+  managing_editor text,
+  web_master      text,
+  requires_authentication boolean not null default true,
+  published_date  timestamp(0) without time zone,
+
+  author_count    int4 not null default 0,
+  link_count      int4 not null default 0,
+
+  original_url    text not null,
+
+  xml_link        text,
+  xml_protocol    text,
+
+  -- from HTTP response
+  last_modified   timestamp(0) without time zone,
+  expires         timestamp(0) without time zone,
+  html_url        text,
+  etag            text,
+  status_code     int4,
+  content_type    text,
+  charset         text,
+
+  -- cached results
+  error           text,
+  body            text,
+
+  constraint feeds_pkey primary key(feed_id)
+);
+
+--
+-- not used yet...
+--
+create table rss.http_response (
+  feed_id         int4 not null,
+  last_modified   timestamp(0) without time zone,
+  expires         timestamp(0) without time zone,
+  html_url        text,
+  etag            text,
+  status_code     int4,
+  content_type    text,
+  charset         text,
+
+  error           text,
+  body            text
+);
+
+--
+-- Additional information
+--
+create table rss.links (
+  entry_id         int4 not null,
+  position         int4 not null,
+  title            text,
+  type             text,
+  href             text,
+  href_lang        text,
+  rel              text,
+  length           int8,
+
+  constraint links_pkey primary key(entry_id, position)
+  -- constraint links_entry_id_fkey foreign key (entry_id) references rss.entries(entry_id)
+);
+
+create table rss.feed_headers (
+  feed_id          int4 not null,
+  name             text not null,
+  position         int4 not null,
+  value            text,
+
+  constraint feed_headers_pkey primary key (feed_id, name, position)
+  -- constraint feed_headers_feed_id_fkey foreign key (feed_id) references rss.feeds(feed_id)
+);
+
+create table rss.feed_cookies (
+  name              text not null,
+  domain            text not null,
+  path              text not null,
+  value             text,
+  expires           timestamp(0) without time zone,
+  http_only         boolean,
+  secure            boolean,
+  same_site         text,
+  max_age           int4,
+  priority          text,
+  version           int4,
+  content           text not null,
+
+  constraint feed_cookies_pkey primary key (domain, path, name)
+  -- constraint feed_cookies_feed_id_fkey foreign key (feed_id) references rss.feeds(feed_id)
+);
+
+create table rss.opml_outlines (
+  outline_id        serial not null,
+  timestamp         timestamp(6) without time zone,
+  author            text,
+  created_date      timestamp(0) without time zone,
+  encoding          text,
+  is_breakout       boolean not null default true,
+  is_comment        boolean not null default true,
+  original_url      text,
+  text              text,
+  title             text,
+  type              text not null,
+  url               text,
+  xml_link          text,
+  xml_protocol      text,
+
+  constraint outlines_pkey primary key (outline_id)
+);
+
+create table rss.opml (
+
+);
+
+-- embedded in opml_outliens?
+create table rss.wire_feeds (
+  wire_feed_id      serial not null,
+  encoding          text,
+  feed_type         text,
+  stylesheet        text,
+
+  constraint wire_feeds_pkey primary key (wire_feed_id)
+);

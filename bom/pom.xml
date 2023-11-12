@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2023. Bear Giles <bgiles@coyotesong.com>.
+  ~ All Rights Reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.coyotesong.microservice.rss</groupId>
+    <artifactId>bom</artifactId>
+    <version>0.4-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>RSS             | BOM</name>
+
+    <!--
+     - note: if we use testcontainers-jooq-codegen-maven-plugin we must use java 17+ :-(
+    -->
+    <properties>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <maven.compiler.source>18</maven.compiler.source>
+        <maven.compiler.target>18</maven.compiler.target>
+
+        <skipITs>true</skipITs>
+
+        <!-- option 1 - Spring Boot -->
+        <spring-boot.version>3.10.0</spring-boot.version>
+
+        <!-- option 2 - Quarkus -->
+        <quarkus.platform.version>3.4.2</quarkus.platform.version>
+
+        <!-- option 3 - we define everything -->
+        <commons-lang3.version>3.13.0</commons-lang3.version>
+        <jetbrains.version>19.0.0</jetbrains.version>
+        <reflections.version>0.10.2</reflections.version>
+        <slf4j.version>2.0.7</slf4j.version>
+        <jdom2.version>2.0.6.1</jdom2.version>
+
+        <!-- option 3 - test dependencies -->
+        <hamcrest.version>2.2</hamcrest.version>
+        <testng.version>7.8.0</testng.version>
+        <junit.version>5.10.0</junit.version>
+
+        <!-- everything else -->
+
+        <!-- CDI dependencies -->
+        <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version> <!-- 3.0.0-M1 -->
+        <jakarta.persistence-api.version>2.2.3</jakarta.persistence-api.version> <!-- 3.1.0 -->
+        <jakarta.xml-bind-api.version>4.0.0</jakarta.xml-bind-api.version> <!-- 3.0.0 -->
+
+        <!-- build dependencies -->
+
+        <!-- maven dependencies -->
+        <maven.version>3.9.0</maven.version> <!-- 3.6.3 on Ubuntu 22.04? -->
+        <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-dependency-plugin.version>3.6.1</maven-dependency-plugin.version>
+        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <maven-javadoc-plugin.version>3.6.2</maven-javadoc-plugin.version>
+        <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
+        <maven-reporting-api.version>3.1.1</maven-reporting-api.version>
+        <maven-site-plugin.version>4.0.0-M11</maven-site-plugin.version>
+        <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+
+        <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
+
+        <error-prone.version>&gt;2.3.4</error-prone.version>
+
+        <!-- reporting requirements -->
+        <owasp.version>8.4.2</owasp.version>
+        <plexus-xml.version>4.0.2</plexus-xml.version>
+        <plexus-utils.version>4.0.0</plexus-utils.version>
+        <plexus-sec-dispatcher.version>1.4</plexus-sec-dispatcher.version>
+        <file-management.version>3.1.0</file-management.version>
+
+        <!-- database -->
+        <postgresql-docker.version>15.0-alpine</postgresql-docker.version>
+        <postgresql-jdbc.version>42.6.0</postgresql-jdbc.version>
+        <hikari.version>4.0.3</hikari.version>
+
+        <testcontainers.version>1.19.1</testcontainers.version>
+        <testcontainers-jooq-codegen-maven-plugin.version>0.0.3</testcontainers-jooq-codegen-maven-plugin.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- option 1 - use spring boot -->
+            <!--
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+
+            <!-- option 2 - use quarkus -->
+            <!--
+            <dependency>
+                <groupId>io.quarkus.platform</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+
+            <!-- option 3 - define everything ourselves, hopefully matching the above -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${jetbrains.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jdom</groupId>
+                <artifactId>jdom2</artifactId>
+                <version>${jdom2.version}</version>
+            </dependency>
+
+            <!-- used by all persistence implementatons -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>${hikari.version}</version>
+            </dependency>
+
+            <!-- used by code autogeneration -->
+            <dependency>
+                <groupId>org.reflections</groupId>
+                <artifactId>reflections</artifactId>
+                <version>${reflections.version}</version>
+            </dependency>
+
+            <!-- TEST DEPENDENCIES -->
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest</artifactId>
+                <version>${hamcrest.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+
+            <!-- CDI dependencies -->
+            <dependency>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>${jakarta.annotation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.persistence</groupId>
+                <artifactId>jakarta.persistence-api</artifactId>
+                <version>${jakarta.persistence-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>${jakarta.xml-bind-api.version}</version>
+            </dependency>
+
+            <!-- SELF-DEPENDENCIES -->
+            <dependency>
+                <groupId>com.coyotesong.microservice.rss</groupId>
+                <artifactId>model</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+
+            <!-- SECURITY DEPENDENCIDES -->
+            <dependency>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-core</artifactId>
+                <version>${owasp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-utils</artifactId>
+                <version>${owasp.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
