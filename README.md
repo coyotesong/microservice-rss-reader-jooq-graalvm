@@ -4,8 +4,8 @@ This repository contains a microservice implements an RSS client that can import
 standard OPML files and periodically scan the referenced RSS feeds for new content.
 
 The runtime code is framework-agnostic - it can be used with either Spring Boot
-or Gradle. Spring Boot Native is getting better but Graalvm support is still better
-with Gradle.
+or Quarkus. Spring Boot Native is getting better but Graalvm support is still better
+with Quarkus.
 
 ### Target Audience
 
@@ -39,10 +39,10 @@ very light - it only includes the data model and MVC interfaces.
 - **core** - data model and MVC interfaces
 - **rss-client** - all RSS-specific code.
 - **persistence** - all database-specific code. Current implementation is jOOQ but with plans to provide alternative implementations.
-- **integrations** - integration with Spring and Gradle
+- **integrations** - integration with Spring and Quarkus
 - **applications** - all applications
 
-The RSS-client and persistence modules are integrated into the Spring or Gradle frameworks via the
+The RSS-client and persistence modules are integrated into the Spring or Quarkus frameworks via the
 [ServiceLoader](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html) mechanism.
 The **core** module includes both `RssServiceFactory` and `RssRepositoryFactoryFactory`
 SPI definitions and the implementations specify them via a file under `/META-INF/services`.

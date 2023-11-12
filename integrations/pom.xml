@@ -31,7 +31,7 @@
     <name>RSS integration | modules</name>
 
     <description>
-        Many of the modules are designed to work within either th Spring and Gradle frameworks,
+        Many of the modules are designed to work within either th Spring and Quarkus frameworks,
         with integration into the respective frameworks handled by a service Factory provided
         via a ServiceLoader instead of the usual configuration mechanism for the framework.
 
